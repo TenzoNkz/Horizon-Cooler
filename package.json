@@ -5,10 +5,14 @@
     "@capacitor/android": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
-    "@capacitor-community/bluetooth-le": "^6.0.0",
-    "typescript": "^5.0.0"
+    "@capacitor-community/bluetooth-le": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
   },
   "scripts": {
-    "prepare": "cap sync"
+    "build": "vite build",
+    "prepare": "npm run build && cap sync"
   }
 }
