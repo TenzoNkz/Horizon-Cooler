@@ -1,0 +1,13 @@
+{
+  "name": "horizon-cooler",
+  "version": "1.0.0",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor-community/bluetooth-le": "^6.0.0"
+  },
+  "scripts": {
+    "prepare": "cap sync"
+  }
+}
