@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0b0d17">
+    <title>Horizon Cooler Control</title>
+    <style>
+        :root {
+            --cyan-soft: #00f2fe; --magenta-soft: #f72585;
+            --grad-primary: linear-gradient(135deg, #00f2fe 0%, #7928ca 50%, #f72585 100%);
+            --grad-primary-soft: linear-gradient(135deg, rgba(0, 242, 254, 0.12) 0%, rgba(121, 40, 202, 0.12) 50%, rgba(247, 37, 133, 0.12) 100%);
+            --bg-deep: #0b0d17; --card-glass: rgba(18, 20, 36, 0.65);
+            --card-inner: rgba(255, 255, 255, 0.025); --border-glass: rgba(255, 255, 255, 0.08);
+            --text-pure: #f8fafc; --text-sub: #94a3b8; --danger-soft: #ff3366;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+        html, body { touch-action: manipulation; overscroll-behavior: none; overflow-x: hidden; width: 100%; height: 100%; }
+        body { 
+            background: radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.1) 0%, transparent 45%), radial-gradient(circle at 85% 85%, rgba(247, 37, 133, 0.1) 0%, transparent 45%), var(--bg-deep);
+            color: var(--text-pure); font-family: 'SF Pro Display', sans-serif; margin: 0; padding: 12px; display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+        .app-container { width: 100%; max-width: 345px; background: var(--card-glass); border-radius: 26px; padding: 18px 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7); border: 1px solid var(--border-glass); backdrop-filter: blur(20px); text-align: center; }
+        h2 { margin: 0 0 14px 0; font-size: 19px; font-weight: 800; background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2.2px; text-transform: uppercase; }
+        .conn-bar { display: flex; align-items: center; justify-content: space-between; background: var(--card-inner); border: 1px solid var(--border-glass); border-radius: 14px; padding: 7px 11px; margin-bottom: 12px; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger-soft); box-shadow: 0 0 8px var(--danger-soft); }
+        .status-dot.connected { background: var(--cyan-soft); box-shadow: 0 0 10px var(--cyan-soft); }
+        .btn-conn-toggle { background: var(--grad-primary-soft); border: 1px solid rgba(0, 242, 254, 0.3); color: var(--text-pure); padding: 5px 13px; font-size: 10.5px; font-weight: 700; border-radius: 10px; cursor: pointer; text-transform: uppercase; }
+        .panel-disabled { opacity: 0.35; pointer-events: none; }
+        .control-group { background: var(--card-inner); border-radius: 18px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border-glass); }
+        .group-title { font-size: 9px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1.6px; margin-bottom: 10px; font-weight: 700; text-align: left; }
+        .volt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .btn-volt { background: var(--card-inner); border: 1px solid var(--border-glass); color: var(--text-pure); padding: 10px 4px; font-size: 11.5px; font-weight: 700; border-radius: 12px; cursor: pointer; }
+        .btn-volt:active { background: var(--grad-primary); border-color: transparent; }
+        .btn-split { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; width: 100%; margin-bottom: 8px; background: var(--card-inner); border: 1px solid var(--border-glass); color: var(--text-pure); border-radius: 12px; cursor: pointer; }
+        .box-right-small { background: var(--grad-primary); color: #ffffff; font-weight: 800; padding: 3.5px 9px; border-radius: 7px; font-size: 9.5px; min-width: 42px; }
+        .slider-wrapper { margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--border-glass); }
+        .slider-header { margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sub); }
+        #brightnessVal { background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 5px; background: linear-gradient(90deg, rgba(0, 242, 254, 0.25), rgba(247, 37, 133, 0.25)); border-radius: 10px; }
+        input[type=range]::-webkit-slider-thumb { height: 18px; width: 18px; border-radius: 50%; background: var(--grad-primary); -webkit-appearance: none; margin-top: -6.5px; border: 1.5px solid #ffffff; }
+        .footer-owner { margin-top: 12px; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
+        .footer-owner a { color: var(--cyan-soft); text-decoration: none; font-weight: 700; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div class="app-container">
+        <h2>Horizon Cooler</h2>
+        <div class="conn-bar">
+            <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-sub);">
+                <div id="statusDot" class="status-dot"></div>
+                <span id="btStatusText">Disconnected</span>
+            </div>
+            <button id="connToggleBtn" class="btn-conn-toggle" onclick="window.toggleBluetoothConnection()">Connect</button>
+        </div>
+
+        <div id="mainDashboard" class="panel-disabled">
+            <div class="control-group">
+                <div class="group-title">VOLTAGE MODE</div>
+                <div class="volt-grid">
+                    <button class="btn-volt" onclick="window.sendCommand('5V')">5V</button>
+                    <button class="btn-volt" onclick="window.sendCommand('9V')">9V</button>
+                    <button class="btn-volt" onclick="window.sendCommand('12V')">12V</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="group-title">RGB MODE</div>
+                <button class="btn-split" onclick="window.toggleRgbState()">
+                    <span>💡 RGB Power</span>
+                    <span id="rgbStateBadge" class="box-right-small">ON</span>
+                </button>
+                <button class="btn-split" onclick="window.sendCommand('RGB_NEXT')">
+                    <span>✨ Mode Switch</span>
+                    <span id="modeDisplay" class="box-right-small">--/55</span>
+                </button>
+                <div class="slider-wrapper">
+                    <div class="slider-header"><span>Brightness</span><span id="brightnessVal">100%</span></div>
+                    <input type="range" id="brightnessSlider" min="3" max="255" value="255">
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-owner">Developed by <a href="https://t.me/horizontalzzz" target="_blank">@horizontalzzz</a></div>
+    </div>
+
+    <!-- Panggilan Modul JS Native -->
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
