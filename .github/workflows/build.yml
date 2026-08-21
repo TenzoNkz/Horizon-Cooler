@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Native APK
 on:
   push:
     branches:
@@ -25,11 +25,24 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Build Web Assets
+        run: npm run build
+
       - name: Add Android Platform
         run: npx cap add android
 
       - name: Sync Capacitor
         run: npx cap sync
+
+      - name: Inject Android Permissions
+        run: |
+          FILE="android/app/src/main/AndroidManifest.xml"
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.BLUETOOTH" />' $FILE
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />' $FILE
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' $FILE
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $FILE
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />' $FILE
+          sed -i '/android.permission.INTERNET/a \    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />' $FILE
 
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
@@ -37,6 +50,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Horizon-Cooler-APK
+          name: Horizon-Cooler-Native
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
