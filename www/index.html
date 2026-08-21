@@ -2,45 +2,266 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <title>Horizon Cooler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="application-name" content="Horizon Cooler">
+    <meta name="theme-color" content="#0b0d17">
+    
+    <title>Horizon Cooler Control</title>
     <style>
         :root {
+            --cyan-soft: #00f2fe;
+            --magenta-soft: #f72585;
             --grad-primary: linear-gradient(135deg, #00f2fe 0%, #7928ca 50%, #f72585 100%);
+            --grad-primary-soft: linear-gradient(135deg, rgba(0, 242, 254, 0.12) 0%, rgba(121, 40, 202, 0.12) 50%, rgba(247, 37, 133, 0.12) 100%);
             --bg-deep: #0b0d17;
             --card-glass: rgba(18, 20, 36, 0.65);
+            --card-inner: rgba(255, 255, 255, 0.025);
+            --border-glass: rgba(255, 255, 255, 0.08);
             --text-pure: #f8fafc;
             --text-sub: #94a3b8;
+            --danger-soft: #ff3366;
         }
-        * { box-sizing: border-box; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-        body { background: var(--bg-deep); color: var(--text-pure); font-family: sans-serif; margin: 0; padding: 12px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .app-container { width: 100%; max-width: 345px; background: var(--card-glass); border-radius: 26px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-        h2 { margin-bottom: 20px; font-size: 20px; background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
-        .btn { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; color: white; background: var(--grad-primary); }
-        .footer-owner { margin-top: 20px; font-size: 10px; color: var(--text-sub); }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            touch-action: manipulation;
+            overscroll-behavior: none;
+            overflow-x: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        body { 
+            background: 
+                radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.1) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(247, 37, 133, 0.1) 0%, transparent 45%),
+                var(--bg-deep);
+            color: var(--text-pure); 
+            font-family: 'SF Pro Display', -apple-system, sans-serif; 
+            margin: 0; padding: 12px; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .app-container {
+            width: 100%; max-width: 345px; background: var(--card-glass);
+            border-radius: 26px; padding: 18px 14px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px); text-align: center;
+        }
+
+        h2 { 
+            margin: 0 0 14px 0; font-size: 19px; font-weight: 800;
+            background: var(--grad-primary);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: 2.2px; text-transform: uppercase;
+        }
+
+        .conn-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card-inner); border: 1px solid var(--border-glass);
+            border-radius: 14px; padding: 7px 11px; margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--danger-soft); box-shadow: 0 0 8px var(--danger-soft);
+        }
+        .status-dot.connected { background: var(--cyan-soft); box-shadow: 0 0 10px var(--cyan-soft); }
+
+        .btn-conn-toggle {
+            background: var(--grad-primary-soft); border: 1px solid rgba(0, 242, 254, 0.3);
+            color: var(--text-pure); padding: 5px 13px; font-size: 10.5px;
+            font-weight: 700; border-radius: 10px; cursor: pointer; text-transform: uppercase;
+        }
+
+        .panel-disabled { opacity: 0.35; pointer-events: none; }
+
+        .control-group {
+            background: var(--card-inner); border-radius: 18px; padding: 12px;
+            margin-bottom: 12px; border: 1px solid var(--border-glass);
+        }
+        .group-title {
+            font-size: 9px; color: var(--text-sub); text-transform: uppercase;
+            letter-spacing: 1.6px; margin-bottom: 10px; font-weight: 700; text-align: left;
+        }
+
+        .volt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+        .btn-volt {
+            background: var(--card-inner); border: 1px solid var(--border-glass);
+            color: var(--text-pure); padding: 10px 4px; font-size: 11.5px;
+            font-weight: 700; border-radius: 12px; cursor: pointer;
+        }
+        .btn-volt:active { background: var(--grad-primary); border-color: transparent; }
+
+        .btn-split {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 12px; width: 100%; margin-bottom: 8px;
+            background: var(--card-inner); border: 1px solid var(--border-glass);
+            color: var(--text-pure); border-radius: 12px; cursor: pointer;
+        }
+
+        .box-right-small {
+            background: var(--grad-primary); color: #ffffff;
+            font-weight: 800; padding: 3.5px 9px; border-radius: 7px;
+            font-size: 9.5px; min-width: 42px;
+        }
+
+        .slider-wrapper { margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--border-glass); }
+        .slider-header { margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sub); }
+        #brightnessVal { background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 5px; background: linear-gradient(90deg, rgba(0, 242, 254, 0.25), rgba(247, 37, 133, 0.25)); border-radius: 10px; }
+        input[type=range]::-webkit-slider-thumb { height: 18px; width: 18px; border-radius: 50%; background: var(--grad-primary); cursor: pointer; -webkit-appearance: none; margin-top: -6.5px; border: 1.5px solid #ffffff; }
+
+        .footer-owner { margin-top: 12px; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); }
+        .footer-owner a { color: var(--cyan-soft); text-decoration: none; font-weight: 700; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;">
+
     <div class="app-container">
         <h2>Horizon Cooler</h2>
-        <button class="btn" id="connBtn" onclick="toggleBLE()">CONNECT BLE</button>
-        <div id="status" style="font-size:12px; margin:10px;">Disconnected</div>
-        <div class="footer-owner">Developed by <a href="https://t.me/horizontalzzz" style="color:#00f2fe">@horizontalzzz</a></div>
+
+        <div class="conn-bar">
+            <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-sub);">
+                <div id="statusDot" class="status-dot"></div>
+                <span id="btStatusText">Disconnected</span>
+            </div>
+            <button id="connToggleBtn" class="btn-conn-toggle" onclick="toggleBluetoothConnection()">Connect</button>
+        </div>
+
+        <div id="mainDashboard" class="panel-disabled">
+            <div class="control-group">
+                <div class="group-title">VOLTAGE MODE</div>
+                <div class="volt-grid">
+                    <button class="btn-volt" onclick="sendCommand('5V')">5V</button>
+                    <button class="btn-volt" onclick="sendCommand('9V')">9V</button>
+                    <button class="btn-volt" onclick="sendCommand('12V')">12V</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="group-title">RGB MODE</div>
+                <button class="btn-split" onclick="toggleRgbState()">
+                    <span>💡 RGB Power</span>
+                    <span id="rgbStateBadge" class="box-right-small">ON</span>
+                </button>
+                <button class="btn-split" onclick="sendCommand('RGB_NEXT')">
+                    <span>✨ Mode Switch</span>
+                    <span id="modeDisplay" class="box-right-small">--/55</span>
+                </button>
+                <div class="slider-wrapper">
+                    <div class="slider-header"><span>Brightness</span><span id="brightnessVal">100%</span></div>
+                    <input type="range" id="brightnessSlider" min="3" max="255" value="255">
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-owner">
+            Developed by <a href="https://t.me/horizontalzzz" target="_blank">@horizontalzzz</a>
+        </div>
     </div>
+
     <script>
-        // --- PROTEKSI ---
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => { if(e.keyCode==123) e.preventDefault(); });
-        
-        // --- LOGIKA BLE ---
-        let device;
-        async function toggleBLE() {
-            try {
-                device = await navigator.bluetooth.requestDevice({ filters: [{ name: 'Horizon Cooler BLE' }], optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
-                const server = await device.gatt.connect();
-                document.getElementById('status').innerText = 'Connected!';
-            } catch(e) { document.getElementById('status').innerText = 'Failed'; }
+        // --- PROTEKSI TOTAL ---
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('copy', (e) => e.preventDefault());
+        document.addEventListener('keydown', (e) => {
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67))) e.preventDefault();
+        });
+
+        // --- BLUETOOTH LOGIC NATIVE ---
+        let bluetoothDevice = null;
+        let rxCharacteristic = null;
+        let isRgbOn = true;
+        const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+        function toggleBluetoothConnection() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            } else {
+                connectBLE();
+            }
         }
+
+        async function connectBLE() {
+            try {
+                document.getElementById('btStatusText').innerText = 'Connecting...';
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'Horizon Cooler BLE' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                rxCharacteristic = await service.getCharacteristic(RX_UUID);
+                const tx = await service.getCharacteristic(TX_UUID);
+                await tx.startNotifications();
+                tx.addEventListener('characteristicvaluechanged', handleNotifications);
+                
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('btStatusText').innerText = 'Connected';
+                document.getElementById('connToggleBtn').innerText = 'Disconnect';
+                document.getElementById('connToggleBtn').classList.add('connected');
+                document.getElementById('mainDashboard').classList.remove('panel-disabled');
+                
+                setTimeout(() => { sendCommand('SYNC'); }, 400);
+            } catch(e) { 
+                document.getElementById('btStatusText').innerText = 'Failed';
+                setTimeout(() => document.getElementById('btStatusText').innerText = 'Disconnected', 2000);
+            }
+        }
+
+        function handleNotifications(event) {
+            let val = new TextDecoder().decode(event.target.value);
+            if (val.startsWith('MD:')) document.getElementById('modeDisplay').innerText = val.replace('MD:', '') + '/55';
+            if (val.startsWith('BRV:')) {
+                let v = parseInt(val.replace('BRV:', ''));
+                document.getElementById('brightnessSlider').value = v;
+                document.getElementById('brightnessVal').innerText = Math.round((v/255)*100) + '%';
+            }
+        }
+
+        function toggleRgbState() {
+            isRgbOn = !isRgbOn;
+            const b = document.getElementById('rgbStateBadge');
+            b.innerText = isRgbOn ? 'ON' : 'OFF';
+            b.style.background = isRgbOn ? 'var(--grad-primary)' : 'rgba(255, 51, 102, 0.15)';
+            b.style.color = isRgbOn ? '#ffffff' : 'var(--danger-soft)';
+            sendCommand('RGB_TOGGLE');
+        }
+
+        function sendCommand(cmd) { if (rxCharacteristic) rxCharacteristic.writeValue(new TextEncoder().encode(cmd)); }
+
+        function onDisconnected() {
+            document.getElementById('statusDot').classList.remove('connected');
+            document.getElementById('btStatusText').innerText = 'Disconnected';
+            document.getElementById('connToggleBtn').innerText = 'Connect';
+            document.getElementById('connToggleBtn').classList.remove('connected');
+            document.getElementById('mainDashboard').classList.add('panel-disabled');
+            bluetoothDevice = null; rxCharacteristic = null;
+        }
+
+        document.getElementById('brightnessSlider').addEventListener('input', e => {
+            document.getElementById('brightnessVal').innerText = Math.round((e.target.value/255)*100) + '%';
+        });
+        document.getElementById('brightnessSlider').addEventListener('change', e => sendCommand('BR:' + e.target.value));
     </script>
 </body>
 </html>
