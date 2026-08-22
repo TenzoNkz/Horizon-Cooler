@@ -1,20 +1,25 @@
 import { BleClient } from '@capacitor-community/bluetooth-le';
 
-// Konstanta ESP32
+// --- KONSTANTA UUID ESP32 ---
 const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
+// --- VARIABEL STATUS GLOBAL ---
 let deviceId = null;
 let isRgbOn = true;
 
-// Elemen UI
+// --- ELEMEN UI ---
 const statusDot = document.getElementById('statusDot');
 const btStatusText = document.getElementById('btStatusText');
 const connToggleBtn = document.getElementById('connToggleBtn');
 const mainDashboard = document.getElementById('mainDashboard');
+const modeDisplay = document.getElementById('modeDisplay');
+const brightnessSlider = document.getElementById('brightnessSlider');
+const brightnessVal = document.getElementById('brightnessVal');
+const rgbStateBadge = document.getElementById('rgbStateBadge');
 
-// Fungsi Koneksi Global
+// --- FUNGSI KONEKSI UTAMA ---
 window.toggleBluetoothConnection = async () => {
     if (deviceId) {
         await BleClient.disconnect(deviceId);
@@ -39,22 +44,37 @@ async function connectBLE() {
         
         await BleClient.connect(deviceId, () => onDisconnected());
 
+        // Update UI saat terhubung
         btStatusText.innerText = 'Connected';
         statusDot.classList.add('connected');
         connToggleBtn.innerText = 'Disconnect';
         connToggleBtn.classList.add('connected');
         mainDashboard.classList.remove('panel-disabled');
 
+        // --- SISTEM SINGLE SOURCE OF TRUTH (MENDENGARKAN ESP32) ---
         await BleClient.startNotifications(deviceId, SERVICE_UUID, TX_UUID, (value) => {
-            let text = new TextDecoder().decode(value.buffer);
-            if (text.startsWith('MD:')) document.getElementById('modeDisplay').innerText = text.replace('MD:', '') + '/55';
+            let text = new TextDecoder().decode(value.buffer).trim(); // Bersihkan karakter kosong
+            
+            // 1. Menangkap status Mode (contoh: "MD:12")
+            if (text.startsWith('MD:')) {
+                modeDisplay.innerText = text.replace('MD:', '') + '/55';
+            }
+            
+            // 2. Menangkap status Brightness (contoh: "BRV:128")
             if (text.startsWith('BRV:')) {
                 let v = parseInt(text.replace('BRV:', ''));
-                document.getElementById('brightnessSlider').value = v;
-                document.getElementById('brightnessVal').innerText = Math.round((v/255)*100) + '%';
+                brightnessSlider.value = v;
+                brightnessVal.innerText = Math.round((v/255)*100) + '%';
+            }
+            
+            // 3. Menangkap status Nyala/Mati LED secara aktual (contoh: "RGB:1" atau "RGB:0")
+            if (text.startsWith('RGB:')) {
+                let state = text.replace('RGB:', '');
+                updateRgbUI(state === '1');
             }
         });
 
+        // Minta ESP32 mengirim semua status saat ini segera setelah terhubung
         setTimeout(() => window.sendCommand('SYNC'), 400);
 
     } catch (error) {
@@ -64,6 +84,7 @@ async function connectBLE() {
     }
 }
 
+// --- PENANGANAN PUTUS KONEKSI ---
 function onDisconnected() {
     deviceId = null;
     statusDot.classList.remove('connected');
@@ -73,6 +94,7 @@ function onDisconnected() {
     mainDashboard.classList.add('panel-disabled');
 }
 
+// --- FUNGSI MENGIRIM PERINTAH KE ESP32 ---
 window.sendCommand = async (cmd) => {
     if (!deviceId) return;
     try {
@@ -84,18 +106,27 @@ window.sendCommand = async (cmd) => {
     }
 };
 
+// --- FUNGSI UPDATE UI (HANYA DIPANGGIL OLEH RESPON ESP32) ---
+function updateRgbUI(isOn) {
+    isRgbOn = isOn;
+    rgbStateBadge.innerText = isRgbOn ? 'ON' : 'OFF';
+    rgbStateBadge.style.background = isRgbOn ? 'var(--grad-primary)' : 'rgba(255, 51, 102, 0.15)';
+    rgbStateBadge.style.color = isRgbOn ? '#ffffff' : 'var(--danger-soft)';
+}
+
+// --- TOMBOL TRIGGER ---
 window.toggleRgbState = () => {
-    isRgbOn = !isRgbOn;
-    const b = document.getElementById('rgbStateBadge');
-    b.innerText = isRgbOn ? 'ON' : 'OFF';
-    b.style.background = isRgbOn ? 'var(--grad-primary)' : 'rgba(255, 51, 102, 0.15)';
-    b.style.color = isRgbOn ? '#ffffff' : 'var(--danger-soft)';
+    // Tombol hanya mengirim perintah, TIDAK mengubah UI secara langsung
     window.sendCommand('RGB_TOGGLE');
 };
 
-// Slider Event Listeners
-const slider = document.getElementById('brightnessSlider');
-slider.addEventListener('input', e => {
-    document.getElementById('brightnessVal').innerText = Math.round((e.target.value/255)*100) + '%';
+// --- KONTROL SLIDER ---
+brightnessSlider.addEventListener('input', e => {
+    // Update teks persen secara lokal saat digeser agar UI terasa responsif
+    brightnessVal.innerText = Math.round((e.target.value/255)*100) + '%';
 });
-slider.addEventListener('change', e => window.sendCommand('BR:' + e.target.value));
+
+brightnessSlider.addEventListener('change', e => {
+    // Kirim nilai akhir ke ESP32 saat geseran dilepas (contoh: "BR:200")
+    window.sendCommand('BR:' + e.target.value);
+});
